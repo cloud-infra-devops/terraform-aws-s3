@@ -14,8 +14,8 @@ resource "aws_s3_bucket" "this" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
-  depends_on = [aws_s3_bucket_server_side_encryption_configuration.this]
-  bucket     = aws_s3_bucket.this.id
+  # depends_on = [aws_s3_bucket_server_side_encryption_configuration.this]
+  bucket = aws_s3_bucket.this.id
   rule {
     object_ownership = "BucketOwnerPreferred"
     # object_ownership = "BucketOwnerEnforced"
