@@ -13,10 +13,21 @@ resource "aws_s3_bucket" "this" {
   )
 }
 
-resource "aws_s3_bucket_policy" "this" {
-  bucket = aws_s3_bucket.this.id
-  policy = data.aws_iam_policy_document.bucket.json
+resource "aws_s3_bucket_ownership_controls" "this" {
+  depends_on = [aws_s3_bucket_server_side_encryption_configuration.this]
+  bucket     = aws_s3_bucket.this.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+    # object_ownership = "BucketOwnerEnforced"
+  }
 }
+
+resource "aws_s3_bucket_policy" "this" {
+  depends_on = [aws_s3_bucket_ownership_controls.this, aws_s3_bucket_public_access_block.this]
+  bucket     = aws_s3_bucket.this.id
+  policy     = data.aws_iam_policy_document.bucket.json
+}
+
 resource "aws_s3_bucket_acl" "s3_acl" {
   # depends_on = [aws_s3_bucket_policy.this]
   depends_on = [aws_s3_bucket_ownership_controls.this]
@@ -52,6 +63,15 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   }
 }
 
+
+resource "aws_s3_bucket_public_access_block" "this" {
+  bucket                  = aws_s3_bucket.this.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 # KMS-backed server side encryption resource (created only when enable_kms is true)
 resource "aws_s3_bucket_server_side_encryption_configuration" "this_kms" {
   count  = var.enable_kms ? 1 : 0
@@ -75,13 +95,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this_aes256" {
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "this" {
-  bucket                  = aws_s3_bucket.this.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
 resource "aws_kms_key" "this" {
   count               = var.enable_kms && var.kms_key_id == null ? 1 : 0
   description         = "Key for bucket ${var.bucket_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
