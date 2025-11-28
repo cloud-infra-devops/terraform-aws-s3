@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "this" {
   # bucket = var.name
-  bucket_prefix = var.bucket_prefix != null ? "${var.bucket_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}" : null
+  bucket_prefix = var.bucket_prefix != null ? var.bucket_prefix : null
   lifecycle {
     prevent_destroy = false
   }
@@ -96,7 +96,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this_aes256" {
 
 resource "aws_kms_key" "this" {
   count               = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  description         = "Key for bucket ${var.bucket_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  description         = "Key for bucket ${var.bucket_prefix}"
   enable_key_rotation = true
   policy              = data.aws_iam_policy_document.key.json
   tags                = var.tags
@@ -105,7 +105,7 @@ resource "aws_kms_key" "this" {
 # Only create an alias for the generated key
 resource "aws_kms_alias" "this" {
   count         = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  name          = "alias/s3/${var.bucket_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  name          = "alias/s3/${var.bucket_prefix}"
   target_key_id = aws_kms_key.this[0].arn
 }
 

@@ -11,7 +11,7 @@ variable "bucket_policy" {
 variable "bucket_prefix" {
   type        = string
   description = "(required since we are not using 'bucket') Creates a unique bucket name beginning with the specified prefix. Conflicts with bucket."
-  default     = "374278"
+  # default     = "374278"
 }
 variable "tags" {
   type        = map(string)
