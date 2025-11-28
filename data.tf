@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "this" {
     effect = "Allow"
     principals {
       type        = "AWS"
-      identifiers = local.account_arn
+      identifiers = [local.account_arn]
     }
     actions = [
       "s3:*"
@@ -31,11 +31,66 @@ data "aws_iam_policy_document" "this" {
     ]
   }
 }
-/*
-data "aws_iam_policy_document" "bucket" {
-  override_policy_documents = compact([var.bucket_policy])
-  version                   = "2012-10-17"
+
+data "aws_iam_policy_document" "key" {
   statement {
+    sid = "AllowManagement"
+    not_actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*"
+    ]
+    resources = ["*"]
+    principals {
+      identifiers = [local.account_arn]
+      type        = "AWS"
+    }
+  }
+
+  statement {
+    sid = "AllowS3"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*"
+    ]
+    resources = ["*"]
+    principals {
+      identifiers = [local.account_arn]
+      type        = "AWS"
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${local.region}.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "DenyDirectDecryption"
+    effect = "Deny"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*"
+    ]
+    resources = ["*"]
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+    condition {
+      test     = "StringNotEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${local.region}.amazonaws.com"]
+    }
+  }
+}
+
+/*
     sid    = "AllowManagement"
     effect = "Allow"
     principals {
@@ -164,64 +219,6 @@ data "aws_iam_policy_document" "this" {
       resources = [
         var.kms_key_id != null ? var.kms_key_id : aws_kms_key.this[0].arn
       ]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "key" {
-  statement {
-    sid = "AllowManagement"
-    not_actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*"
-    ]
-    resources = ["*"]
-    principals {
-      identifiers = [local.account_arn]
-      type        = "AWS"
-    }
-  }
-
-  statement {
-    sid = "AllowS3"
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*"
-    ]
-    resources = ["*"]
-    principals {
-      identifiers = [local.account_arn]
-      type        = "AWS"
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "kms:ViaService"
-      values   = ["s3.${local.region}.amazonaws.com"]
-    }
-  }
-
-  statement {
-    sid    = "DenyDirectDecryption"
-    effect = "Deny"
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*"
-    ]
-    resources = ["*"]
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-    condition {
-      test     = "StringNotEquals"
-      variable = "kms:ViaService"
-      values   = ["s3.${local.region}.amazonaws.com"]
     }
   }
 }
