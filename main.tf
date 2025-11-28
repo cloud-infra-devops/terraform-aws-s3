@@ -96,17 +96,58 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this_aes256" {
 }
 
 resource "aws_kms_key" "this" {
-  count               = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  description         = "Key for bucket ${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
-  enable_key_rotation = true
-  policy              = data.aws_iam_policy_document.key.json
-  tags                = var.tags
+  count                   = var.enable_kms && var.kms_key_id == null ? 1 : 0
+  description             = "KMS Encryption Key for bucket ${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  # policy                  = data.aws_iam_policy_document.key.json
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "Enable IAM User Permissions",
+        Effect    = "Allow",
+        Principal = { AWS = "arn:aws:iam::${local.account_id}:root" },
+        Action    = "kms:*",
+        Resource  = ["arn:aws:kms:${local.region}:${local.account_id}:key/${aws_kms_key.this[0].key_id}", "alias/${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"]
+      },
+      {
+        Sid       = "Allow S3 to use the key",
+        Effect    = "Allow",
+        Principal = { Service = "s3.amazonaws.com" },
+        Action = [
+          "kms:ReplicateKey",
+          "kms:Create*",
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey",
+          "kms:GenerateDataKeyWithoutPlaintext"
+        ],
+        Resource = ["arn:aws:kms:${local.region}:${local.account_id}:key/${aws_kms_key.this[0].key_id}", "alias/${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"]
+      }
+    ]
+  })
+  tags = var.tags
 }
 
 # Only create an alias for the generated key
 resource "aws_kms_alias" "this" {
+  depends_on    = [aws_kms_key.this]
   count         = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  name          = "alias/s3/${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  name          = "alias/${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
   target_key_id = aws_kms_key.this[0].arn
 }
 

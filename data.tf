@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "this" {
     ]
   }
 }
-
+/*
 data "aws_iam_policy_document" "key" {
   statement {
     sid = "AllowManagement"
@@ -90,7 +90,6 @@ data "aws_iam_policy_document" "key" {
   }
 }
 
-/*
     sid    = "AllowManagement"
     effect = "Allow"
     principals {
