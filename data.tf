@@ -6,7 +6,7 @@ locals {
   kms_master_key_id = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
   account_id        = data.aws_caller_identity.this.account_id
   account_arn       = "arn:aws:iam::${local.account_id}:root"
-  bucket_arn        = "arn:aws:s3:::${var.bucket_prefix}"
+  bucket_arn        = "arn:aws:s3:::${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
   region            = data.aws_region.this.region
   # sid_suffix           = join("", regexall("[[:alnum:]]+", var.bucket_prefix))
   # read_principals      = concat(var.read_principals, local.readwrite_principals)

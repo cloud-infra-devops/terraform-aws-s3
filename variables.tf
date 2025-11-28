@@ -4,15 +4,15 @@ variable "bucket_policy" {
   default     = null
 }
 
-# variable "name" {
-#   type        = string
-#   description = "The name of the s3 bucket"
-# }
-variable "bucket_prefix" {
+variable "s3_name_prefix" {
   type        = string
-  description = "(required since we are not using 'bucket') Creates a unique bucket name beginning with the specified prefix. Conflicts with bucket."
-  # default     = "374278"
+  description = "The name of the s3 bucket"
 }
+# variable "bucket_prefix" {
+#   type        = string
+#   description = "(required since we are not using 'bucket') Creates a unique bucket name beginning with the specified prefix. Conflicts with bucket."
+#   # default     = "374278"
+# }
 variable "tags" {
   type        = map(string)
   description = "Tags to be applied to created resources"
