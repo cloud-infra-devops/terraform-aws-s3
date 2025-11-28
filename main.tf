@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "this" {
   # bucket = var.name
-  bucket_prefix = (var.bucket_prefix != null ? var.bucket_prefix : null) - "${var.project}-${var.env}-${data.aws_region.this.region}"
+  bucket_prefix = var.bucket_prefix != null ? "${var.bucket_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}" : null
   lifecycle {
     prevent_destroy = false
   }
