@@ -31,6 +31,53 @@ data "aws_iam_policy_document" "this" {
     ]
   }
 }
+
+data "aws_iam_policy_document" "s3_kms_policy" {
+  depends_on = [aws_kms_alias.this]
+  version    = "2012-10-17"
+  statement {
+    sid    = "Enable IAM User Permissions"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id}:root"]
+    }
+    actions = [
+      "kms:*"
+    ]
+    resources = ["*"]
+  }
+  statement {
+    sid    = "Allow S3 to use the key"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+    actions = [
+      "kms:ReplicateKey",
+      "kms:Create*",
+      "kms:Describe*",
+      "kms:Enable*",
+      "kms:List*",
+      "kms:Put*",
+      "kms:Update*",
+      "kms:Revoke*",
+      "kms:Disable*",
+      "kms:Get*",
+      "kms:Delete*",
+      "kms:ScheduleKeyDeletion",
+      "kms:CancelKeyDeletion",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey",
+      "kms:GenerateDataKeyWithoutPlaintext"
+    ]
+    resources = ["*"]
+  }
+}
 /*
 data "aws_iam_policy_document" "key" {
   statement {
