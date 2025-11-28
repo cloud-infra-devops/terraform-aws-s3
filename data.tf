@@ -3,13 +3,10 @@ data "aws_region" "this" {}
 
 locals {
   # Determine the KMS key id to use: prefer provided `var.kms_key_id`, otherwise use created key when present
-  kms_master_key_id = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
-}
-
-locals {
-  account_arn          = "arn:aws:iam::${local.account_id}:root"
+  kms_master_key_id    = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
   account_id           = data.aws_caller_identity.this.account_id
-  bucket_arn           = "arn:aws:s3:::${var.bucket_prefix}-${local.account_id}-${data.aws_region.this.name}"
+  account_arn          = "arn:aws:iam::${local.account_id}:root"
+  bucket_arn           = "arn:aws:s3:::${var.bucket_prefix}"
   region               = data.aws_region.this.region
   sid_suffix           = join("", regexall("[[:alnum:]]+", var.bucket_prefix))
   read_principals      = concat(var.read_principals, local.readwrite_principals)
@@ -18,9 +15,14 @@ locals {
 
 data "aws_iam_policy_document" "bucket" {
   override_policy_documents = compact([var.bucket_policy])
-
+  version                   = "2012-10-17"
   statement {
-    sid       = "AllowManagement"
+    sid    = "AllowManagement"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [local.account_arn]
+    }
     resources = [local.bucket_arn, "${local.bucket_arn}/*"]
     not_actions = [
       "s3:PutObject",
@@ -28,14 +30,11 @@ data "aws_iam_policy_document" "bucket" {
       "s3:DeleteObject",
       "s3:ListBucket"
     ]
-    principals {
-      type        = "AWS"
-      identifiers = [local.account_arn]
-    }
   }
 
   statement {
     sid       = "AllowWrite"
+    effect    = "Allow"
     resources = [local.bucket_arn, "${local.bucket_arn}/*"]
     actions = [
       "s3:PutObject",
@@ -58,6 +57,7 @@ data "aws_iam_policy_document" "bucket" {
 
   statement {
     sid       = "AllowRead"
+    effect    = "Allow"
     resources = [local.bucket_arn, "${local.bucket_arn}/*"]
     actions = [
       "s3:GetObject",
@@ -69,7 +69,6 @@ data "aws_iam_policy_document" "bucket" {
     }
     dynamic "condition" {
       for_each = var.read_tags
-
       content {
         test     = "StringEquals"
         variable = "aws:PrincipalTag/${condition.key}"
