@@ -3,16 +3,35 @@ data "aws_region" "this" {}
 
 locals {
   # Determine the KMS key id to use: prefer provided `var.kms_key_id`, otherwise use created key when present
-  kms_master_key_id    = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
-  account_id           = data.aws_caller_identity.this.account_id
-  account_arn          = "arn:aws:iam::${local.account_id}:root"
-  bucket_arn           = "arn:aws:s3:::${var.bucket_prefix}"
-  region               = data.aws_region.this.region
-  sid_suffix           = join("", regexall("[[:alnum:]]+", var.bucket_prefix))
-  read_principals      = concat(var.read_principals, local.readwrite_principals)
-  readwrite_principals = coalescelist(var.readwrite_principals, [local.account_arn])
+  kms_master_key_id = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
+  account_id        = data.aws_caller_identity.this.account_id
+  account_arn       = "arn:aws:iam::${local.account_id}:root"
+  bucket_arn        = "arn:aws:s3:::${var.bucket_prefix}"
+  region            = data.aws_region.this.region
+  # sid_suffix           = join("", regexall("[[:alnum:]]+", var.bucket_prefix))
+  # read_principals      = concat(var.read_principals, local.readwrite_principals)
+  # readwrite_principals = coalescelist(var.readwrite_principals, [local.account_arn])
 }
 
+## s3 bucket policy
+data "aws_iam_policy_document" "this" {
+  version = "2012-10-17"
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = local.account_arn
+    }
+    actions = [
+      "s3:*"
+    ]
+    resources = [
+      "${aws_s3_bucket.this.arn}/*",
+      "${aws_s3_bucket.this.arn}"
+    ]
+  }
+}
+/*
 data "aws_iam_policy_document" "bucket" {
   override_policy_documents = compact([var.bucket_policy])
   version                   = "2012-10-17"
@@ -31,7 +50,6 @@ data "aws_iam_policy_document" "bucket" {
       "s3:ListBucket"
     ]
   }
-
   statement {
     sid       = "AllowWrite"
     effect    = "Allow"
@@ -207,3 +225,4 @@ data "aws_iam_policy_document" "key" {
     }
   }
 }
+*/

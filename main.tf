@@ -1,6 +1,7 @@
 resource "aws_s3_bucket" "this" {
   # bucket = var.name
   bucket_prefix = var.bucket_prefix != null ? var.bucket_prefix : null
+  region        = local.region
   lifecycle {
     prevent_destroy = false
   }
@@ -60,7 +61,7 @@ resource "aws_s3_bucket_ownership_controls" "this" {
 resource "aws_s3_bucket_policy" "this" {
   depends_on = [aws_s3_bucket_ownership_controls.this, aws_s3_bucket_public_access_block.this]
   bucket     = aws_s3_bucket.this.id
-  policy     = data.aws_iam_policy_document.bucket.json
+  policy     = data.aws_iam_policy_document.this.json
 }
 resource "aws_s3_bucket_acl" "s3_acl" {
   # depends_on = [aws_s3_bucket_policy.this]
