@@ -33,8 +33,7 @@ data "aws_iam_policy_document" "this" {
 }
 
 data "aws_iam_policy_document" "s3_kms_policy" {
-  depends_on = [aws_kms_alias.this]
-  version    = "2012-10-17"
+  version = "2012-10-17"
   statement {
     sid    = "Enable IAM User Permissions"
     effect = "Allow"

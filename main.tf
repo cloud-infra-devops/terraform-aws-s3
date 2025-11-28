@@ -96,6 +96,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this_aes256" {
 }
 
 resource "aws_kms_key" "this" {
+  depends_on              = [data.aws_iam_policy_document.s3_kms_policy]
   count                   = var.enable_kms && var.kms_key_id == null ? 1 : 0
   description             = "KMS Encryption Key for bucket ${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
   enable_key_rotation     = true
