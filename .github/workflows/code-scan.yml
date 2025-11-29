@@ -26,67 +26,67 @@ permissions:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 # This workflow contains the following sequential jobs - "checkov_scan", "tflint", "plan" and "apply"
 jobs:
-  checkov_scan:
-    name: "Checkov"
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
+  # checkov_scan:
+  #   name: "Checkov"
+  #   # The type of runner that the job will run on
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so follow-up steps can access it
-      - name: Checkout Code
-        uses: actions/checkout@v5.0.1
-        # uses: actions/checkout@v4
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, so follow-up steps can access it
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v5.0.1
+  #       # uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v6.1.0
-        # uses: actions/setup-python@v4
-        with:
-          python-version: "3.13"
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v6.1.0
+  #       # uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.13"
 
-      - name: Install Checkov
-        run: pip install checkov
+  #     - name: Install Checkov
+  #       run: pip install checkov
 
-      - name: Run Checkov
-        run: checkov -d . --download-external-modules true
+  #     - name: Run Checkov
+  #       run: checkov -d . --download-external-modules true
 
-      - name: Checkov GitHub Action
-        id: checkov
-        uses: bridgecrewio/checkov-action@master
-        with:
-          # This will add both a CLI output to the console and create a results.sarif file
-          directory: .
-          framework: terraform
-          quiet: true
-          soft_fail: true
-          output_format: sarif
-          output_file_path: results.sarif
-          # output_format: cli,sarif
-          # output_file_path: console,checkov-scan-results.sarif
-          skip_check: CKV2_GHA_1
-        continue-on-error: true
+  #     - name: Checkov GitHub Action
+  #       id: checkov
+  #       uses: bridgecrewio/checkov-action@master
+  #       with:
+  #         # This will add both a CLI output to the console and create a results.sarif file
+  #         directory: .
+  #         framework: terraform
+  #         quiet: true
+  #         soft_fail: true
+  #         output_format: sarif
+  #         output_file_path: results.sarif
+  #         # output_format: cli,sarif
+  #         # output_file_path: console,checkov-scan-results.sarif
+  #         skip_check: CKV2_GHA_1
+  #       continue-on-error: true
 
-      # - name: Checkov Report
-      #   id: checkov-report
-      #   working-directory: .
-      #   run: |
-      #     while IFS= read -r line; do
-      #     echo "$line" >> $GITHUB_STEP_SUMMARY
-      #     done < results_checkov_failed_only.md
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+  #     # - name: Checkov Report
+  #     #   id: checkov-report
+  #     #   working-directory: .
+  #     #   run: |
+  #     #     while IFS= read -r line; do
+  #     #     echo "$line" >> $GITHUB_STEP_SUMMARY
+  #     #     done < results_checkov_failed_only.md
+  #     - name: Upload SARIF file
+  #       uses: github/codeql-action/upload-sarif@v3
 
-        # Results are generated only on a success or failure
-        # this is required since GitHub by default won't run the next step
-        # when the previous one has failed. Security checks that do not pass will 'fail'.
-        # An alternative is to add `continue-on-error: true` to the previous step
-        # Or 'soft_fail: true' to checkov.
-        if: success() || failure()
-        with:
-          sarif_file: results.sarif
+  #       # Results are generated only on a success or failure
+  #       # this is required since GitHub by default won't run the next step
+  #       # when the previous one has failed. Security checks that do not pass will 'fail'.
+  #       # An alternative is to add `continue-on-error: true` to the previous step
+  #       # Or 'soft_fail: true' to checkov.
+  #       if: success() || failure()
+  #       with:
+  #         sarif_file: results.sarif
 
   tflint:
     name: "Tflint"
@@ -145,6 +145,42 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec.sarif
+
+  checkov:
+    name: "Checkov"
+    runs-on: ubuntu-latest
+    needs: tfsec
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Plan (json)
+        run: terraform plan -out=tfplan.bin && terraform show -json tfplan.bin > tfplan.json
+
+      - name: Run Checkov on plan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          file: tfplan.json
+          framework: terraform_plan
+          soft_fail: false
+          output_format: sarif
+          output_file_path: checkov.sarif
+
+      - name: Upload SARIF (Checkov)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov.sarif
 
   Trivy:
     name: "Trivy"
