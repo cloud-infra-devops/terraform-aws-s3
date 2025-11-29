@@ -97,9 +97,11 @@ jobs:
         uses: actions/checkout@v5.0.1
         # uses: actions/checkout@v4
       - name: Setup TFLint
-        run: |
-          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          cache: true
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: latest
+        # run: |
+        #   curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
       - name: Show version
         run: tflint --version
       - name: Install Terraform plugins
