@@ -195,18 +195,17 @@ jobs:
       #     skip_check: CKV2_GHA_1
       #   # continue-on-error: true
       #   continue-on-error: false
-      # - name: Upload SARIF (Checkov)
-      #   uses:
-      #     github/codeql-action/upload-sarif@v4
-
-      #     # Results are generated only on a success or failure
-      #     # this is required since GitHub by default won't run the next step
-      #     # when the previous one has failed. Security checks that do not pass will 'fail'.
-      #     # An alternative is to add `continue-on-error: true` to the previous step
-      #     # Or 'soft_fail: true' to checkov.
-      #   if: success() || failure()
-      #   with:
-      #     sarif_file: results.sarif
+      - name: Upload SARIF (Checkov)
+        uses:
+          github/codeql-action/upload-sarif@v4
+          # Results are generated only on a success or failure
+          # this is required since GitHub by default won't run the next step
+          # when the previous one has failed. Security checks that do not pass will 'fail'.
+          # An alternative is to add `continue-on-error: true` to the previous step
+          # Or 'soft_fail: true' to checkov.
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
 
   # terraform:
   #   needs: checkov
