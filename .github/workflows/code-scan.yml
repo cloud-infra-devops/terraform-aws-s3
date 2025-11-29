@@ -167,6 +167,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with:
+          fetch-depth: 0
       - name: Set up Python 3
         uses: actions/setup-python@v4
         with:
@@ -177,6 +179,7 @@ jobs:
         with:
           # This will create checkov scan --> results.sarif file
           directory: .
+          log_level: DEBUG
           framework: terraform
           quiet: true
           soft_fail: false
@@ -200,6 +203,28 @@ jobs:
         if: success() || failure()
         with:
           sarif_file: results.sarif
+
+  terraform:
+    needs: checkov
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+          terraform_wrapper: false
+      - name: Terraform Format
+        run: terraform fmt
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Validate and Plan with Checkov
+        run: |
+          terraform validate
+          terraform plan -input=false -out tfplan
+          terraform show -json tfplan | jq '.' > tfplan.json
+          checkov -f tfplan.json
 
   Trivy:
     name: "Trivy"
