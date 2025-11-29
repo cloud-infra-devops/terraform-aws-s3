@@ -6,5 +6,5 @@
     "notebook.formatOnSave.enabled": true,
     "editor.fontFamily": "Menlo, Monaco, 'Courier New', monospace",
     "editor.fontWeight": "normal",
-    "workbench.colorTheme": "Default Dark Modern"
+    "workbench.colorTheme": "Default Light Modern"
 }

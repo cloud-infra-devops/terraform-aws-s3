@@ -2,14 +2,14 @@ name: terraform-code-scan
 run-name: ${{ github.actor }} has triggered the GitHub Actions
 # Controls when the action will run. Invokes the workflow on push events but only for the main branch and on pull requests that modify Terraform files
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
+  # Triggers the workflow on push or pull request events
   push:
-    branches: ["main"]
-    # paths: ["**/*.tf", "**.tfvars"]
-  pull_request:
-    branches: ["main"]
+    branches: ["main", "feature/dev"]
     paths: ["**.tf", "**.tfvars"]
-    types: [opened, synchronize, reopened]
+  pull_request:
+    branches: ["main", "feature/dev"]
+    paths: ["**.tf", "**.tfvars"]
+    # types: [opened, synchronize, reopened]
   # Allows you to run this workflow manually from the Actions tab
   # workflow_dispatch:
 
@@ -24,7 +24,7 @@ permissions:
   issues: write # Ensure this is added
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
-# This workflow contains the following sequential jobs - "checkov_scan", "tflint", "plan" and "apply"
+# This workflow contains the following sequential jobs - "tflint", "tfsec", "checkov", "Trivy" and "Terraform-docs"
 jobs:
   # checkov_scan:
   #   name: "Checkov"
@@ -91,7 +91,10 @@ jobs:
   tflint:
     name: "Tflint"
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
@@ -113,7 +116,10 @@ jobs:
   tfsec:
     name: "Tfsec"
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
     steps:
       - name: Clone repo
         uses: actions/checkout@v5.0.1
@@ -153,6 +159,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: .
     env:
       TF_IN_AUTOMATION: "true"
     steps:
@@ -190,7 +197,10 @@ jobs:
   Trivy:
     name: "Trivy"
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
@@ -221,7 +231,10 @@ jobs:
   Terraform-docs:
     name: "Terraform Docs"
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
