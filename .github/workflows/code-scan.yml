@@ -1,0 +1,339 @@
+name: terraform-code-scan
+run-name: ${{ github.actor }} has triggered the GitHub Actions
+# Controls when the action will run. Invokes the workflow on push events but only for the main branch and on pull requests that modify Terraform files
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: ["main"]
+    # paths: ["**/*.tf", "**.tfvars"]
+  pull_request:
+    branches: ["main"]
+    paths: ["**.tf", "**.tfvars"]
+    types: [opened, synchronize, reopened]
+  # Allows you to run this workflow manually from the Actions tab
+  # workflow_dispatch:
+
+# Permission can be added at job level or at workflow level
+permissions:
+  id-token: write # This is required for requesting the JWT token from IdP
+  contents: read # This is required for actions/checkout
+  pull-requests: write # This is required for gh bot to comment PR
+  security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+  actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+  checks: write
+  issues: write # Ensure this is added
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# This workflow contains the following sequential jobs - "checkov_scan", "tflint", "plan" and "apply"
+jobs:
+  checkov_scan:
+    name: Run Checkov
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so follow-up steps can access it
+      - name: Checkout Code
+        uses: actions/checkout@v5.0.1
+        # uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.1.0
+        # uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov
+        run: checkov -d . --download-external-modules true
+
+      - name: Checkov GitHub Action
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          # This will add both a CLI output to the console and create a results.sarif file
+          directory: .
+          framework: terraform
+          quiet: true
+          soft_fail: true
+          output_format: sarif
+          output_file_path: results.sarif
+          # output_format: cli,sarif
+          # output_file_path: console,checkov-scan-results.sarif
+          skip_check: CKV2_GHA_1
+        continue-on-error: true
+
+      # - name: Checkov Report
+      #   id: checkov-report
+      #   working-directory: .
+      #   run: |
+      #     while IFS= read -r line; do
+      #     echo "$line" >> $GITHUB_STEP_SUMMARY
+      #     done < results_checkov_failed_only.md
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+
+        # Results are generated only on a success or failure
+        # this is required since GitHub by default won't run the next step
+        # when the previous one has failed. Security checks that do not pass will 'fail'.
+        # An alternative is to add `continue-on-error: true` to the previous step
+        # Or 'soft_fail: true' to checkov.
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
+
+  tflint:
+    name: "Tflint"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+        # uses: actions/checkout@v4
+      - name: Setup TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+      - name: Install Terraform plugins
+        run: tflint --init
+      - name: Lint Terraform files
+        run: tflint -f compact --recursive
+
+  tfsec:
+    name: tfsec
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@@v5.0.1
+        with:
+          persist-credentials: false
+      # - name: tfsec
+      #   uses: aquasecurity/tfsec-action@v1.0.0
+      #   with:
+      #     soft_fail: true
+      - name: Setup tfsec
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install.sh | bash
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: .
+          additional_args: >
+            --concise-output
+            --format sarif
+            --out tfsec.sarif
+            --soft-fail-severities LOW, MEDIUM
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-sarif-action@v0.1.0
+        with:
+          sarif_file: tfsec.sarif
+
+      - name: Upload SARIF (tfsec)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+
+  Trivy:
+    name: "Trivy IaC Scan"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+        # uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
+        with:
+          version: v0.61.0
+          cache: true
+
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "." # Path to your Terraform files
+          trivy-config: "trivy.yaml" # Optional: Path to a custom Trivy config file
+          format: "sarif"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN"
+          exit-code: 0
+          output: "trivy-terraform-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-terraform-results.sarif"
+
+  Terraform-docs:
+    name: "Terraform Docs"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+        # uses: actions/checkout@v4
+
+      - name: README.md generation
+        uses: terraform-docs/gh-actions@main
+        id: tfdocs
+        with:
+          config-file: .terraform-docs.yml
+          working-dir: .
+          output-file: README.md
+          output-method: inject
+          git-push: "true"
+
+  # plan:
+  #   name: "Terraform Plan"
+  #   runs-on: ubuntu-latest
+  #   needs: [checkov_scan, tflint]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   env:
+  #     TF_CLOUD_ORGANIZATION: "cloud-infra-dev"
+  #     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  #     # TF_WORKSPACE: "github-actions-oidc-hcp-terraform"
+  #     TF_WORKSPACE: "etl-datapipeline-demo-s3-lambda-glue"
+  #     CONFIG_DIRECTORY: "./"
+  #     TF_LOG: INFO
+
+  #   steps:
+  #     - name: "Checkout code from Repository (same as git clone)"
+  #       uses: actions/checkout@v4
+
+  #     # - name: Upload Configuration
+  #     #   uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
+  #     #   id: plan-upload
+  #     #   with:
+  #     #     workspace: ${{ env.TF_WORKSPACE }}
+  #     #     directory: ${{ env.CONFIG_DIRECTORY }}
+  #     #     speculative: true
+
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+  #         role-session-name: ${{ secrets.ROLE_SESSION_NAME}}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+
+  #     - name: Verify IAM Role Assumption
+  #       run: |
+  #         aws sts get-caller-identity
+
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+  #         terraform_version: 1.14.0
+
+  #     - name: Terraform Init
+  #       id: init
+  #       run: |
+  #         echo -e "access_key = \"${AWS_ACCESS_KEY_ID}\"\nsecret_key = \"${AWS_SECRET_ACCESS_KEY}\"\ntoken = \"${AWS_SESSION_TOKEN}\"\nregion = \"${AWS_REGION}\"" | tee credentials.auto.tfvars
+  #         terraform init
+  #       env:
+  #         TF_LOG: ERROR
+
+  #     - name: Terraform Fmt
+  #       id: fmt
+  #       run: terraform fmt --recursive
+
+  #     - name: Terraform Validate
+  #       id: validate
+  #       run: terraform validate
+  #       env:
+  #         TF_LOG: ERROR
+
+  #     # Generates an execution plan for Terraform
+  #     - name: Terraform Plan
+  #       run: terraform plan -var-file="credentials.auto.tfvars" -input=false -out=tfplan
+  #       continue-on-error: true # "continue-on-error: true" ensures the workflow continues even if the plan fails, so you still get feedback about what went wrong
+  #       env:
+  #         TF_VAR_read_only: true
+  #         TF_LOG: ERROR
+
+  #     - name: Upload Plan Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: tfplan
+  #         path: tfplan
+
+  #     # - name: Save Terraform Plan Output
+  #     #   if: github.event_name == 'pull_request'
+  #     #   run: terraform show -json tfplan > plan.json
+  #     #   env:
+  #     #     TF_LOG: ERROR
+
+  #     # - name: Create PR Comment with Plan Output
+  #     #   if: github.event_name == 'pull_request'
+  #     #   uses: actions/github-script@v6
+  #     #   with:
+  #     #     script: |
+  #     #       const fs = require('fs');
+  #     #       const planOutput = fs.readFileSync('plan.json', 'utf8');
+  #     #       const comment = `### Terraform Plan Result\n\`\`\`json\n${planOutput}\n\`\`\``;
+  #     #       const issue_number = context.payload.pull_request.number;
+  #     #       const owner = context.repo.owner;
+  #     #       const repo = context.repo.repo;
+  #     #       await github.rest.issues.createComment({
+  #     #         owner,
+  #     #         repo,
+  #     #         issue_number,
+  #     #         body: comment,
+  #     #       });
+
+  # apply:
+  #   name: "Terraform Apply"
+  #   runs-on: ubuntu-latest
+  #   needs: [plan]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   env:
+  #     TF_CLOUD_ORGANIZATION: "cloud-infra-dev"
+  #     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  #     # TF_WORKSPACE: "github-actions-oidc-hcp-terraform"
+  #     TF_WORKSPACE: "etl-datapipeline-demo-s3-lambda-glue"
+  #     CONFIG_DIRECTORY: "./"
+  #     TF_LOG: INFO
+  #     AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  #   steps:
+  #     - name: "Checkout code from Repository (same as git clone)"
+  #       uses: actions/checkout@v4
+
+  #     - name: "Configure AWS Credentials"
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+  #         role-session-name: ${{ secrets.ROLE_SESSION_NAME}}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+  #         terraform_version: 1.14.0
+
+  #     - name: Download Plan Artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: tfplan
+
+  #     - name: Terraform Init
+  #       run: terraform init
+
+  #     - name: Terraform Apply
+  #       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #       run: terraform apply -auto-approve tfplan
+  #       env:
+  #         TF_LOG: ERROR

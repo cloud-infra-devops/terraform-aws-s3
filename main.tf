@@ -66,6 +66,11 @@ resource "aws_s3_bucket_acl" "s3_acl" {
   acl        = "private"
 }
 
+resource "aws_s3_bucket_metric" "enable-metrics-bucket" {
+  bucket = "${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  name   = "EntireBucket"
+}
+
 # KMS-backed server side encryption resource (created only when enable_kms is true)
 resource "aws_s3_bucket_server_side_encryption_configuration" "this_kms" {
   depends_on = [aws_s3_bucket_public_access_block.this]

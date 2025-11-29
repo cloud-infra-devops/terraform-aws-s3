@@ -1,0 +1,10 @@
+skip_checks:
+  - CKV_AWS_20
+  - CKV_AWS_145
+  - CKV_AWS_217
+  - CKV_AWS_233
+  - CKV_AWS_237
+
+framework:
+  - terraform
+  - cloudformation
