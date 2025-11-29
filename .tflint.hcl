@@ -10,12 +10,11 @@ plugin "terraform" {
   version = "0.13.0"
   source  = "github.com/terraform-linters/tflint-ruleset-terraform"
 }
-config {
-  aws_region = "us-west-2"
-  # force               = false
-  # call_module_type    = "all" # or "local"
-  # disabled_by_default = false
-}
+# config {
+#   # force               = false
+#   # call_module_type    = "all" # or "local"
+#   # disabled_by_default = false
+# }
 
 # Disallow deprecated (0.11-style) interpolation
 rule "terraform_deprecated_interpolation" {
