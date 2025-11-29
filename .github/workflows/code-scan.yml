@@ -182,7 +182,8 @@ jobs:
           # output_format: cli,sarif
           # output_file_path: console,checkov-scan-results.sarif
           skip_check: CKV2_GHA_1
-        continue-on-error: true
+        # continue-on-error: true
+        continue-on-error: false
       - name: Upload SARIF (Checkov)
         uses:
           github/codeql-action/upload-sarif@v4
