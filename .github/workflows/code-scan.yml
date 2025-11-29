@@ -179,6 +179,7 @@ jobs:
         with:
           # This will create checkov scan --> results.sarif file
           directory: .
+          log_level: DEBUG
           framework: terraform
           quiet: true
           soft_fail: false
@@ -213,6 +214,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
+          terraform_wrapper: false
       - name: Terraform Format
         run: terraform fmt
       - name: Terraform Init
@@ -220,7 +222,7 @@ jobs:
       - name: Terraform Validate and Plan with Checkov
         run: |
           terraform validate
-          terraform plan -out tfplan
+          terraform plan -input=false -out tfplan
           terraform show -json tfplan | jq '.' > tfplan.json
           checkov -f tfplan.json
 
