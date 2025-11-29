@@ -142,7 +142,7 @@ jobs:
           sarif_file: tfsec.sarif
 
       - name: Upload SARIF (tfsec)
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: tfsec.sarif
 
@@ -159,20 +159,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5.0.1
 
-      # - name: Set up Python
-      #   uses: actions/setup-python@v6.1.0
-      #   with:
-      #     python-version: "3.13"
-
-      # - name: Install Checkov
-      #   run: pip install checkov
-
-      # - name: Run Checkov
-      #   run: |
-      #     checkov -d . --output json \
-      #       --download-external-modules True \
-      #       > checkov_results.json || true
-
       - name: Checkov GitHub Action
         id: checkov
         uses: bridgecrewio/checkov-action@v12.3075.0
@@ -188,7 +174,7 @@ jobs:
           # output_file_path: console,checkov-scan-results.sarif
           skip_check: CKV2_GHA_1
         continue-on-error: true
-      - name: Upload SARIF file
+      - name: Upload SARIF (Checkov)
         uses:
           github/codeql-action/upload-sarif@v4
 
@@ -201,21 +187,6 @@ jobs:
         with:
           sarif_file: results.sarif
 
-      - name: Run Checkov on plan
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: .
-          file: tfplan.json
-          framework: terraform_plan
-          soft_fail: false
-          output_format: sarif
-          output_file_path: checkov.sarif
-
-      - name: Upload SARIF (Checkov)
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: checkov.sarif
-
   Trivy:
     name: "Trivy"
     runs-on: ubuntu-latest
@@ -223,7 +194,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
-        # uses: actions/checkout@v4
 
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.2.3
@@ -244,7 +214,7 @@ jobs:
           output: "trivy-terraform-results.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-terraform-results.sarif"
 
