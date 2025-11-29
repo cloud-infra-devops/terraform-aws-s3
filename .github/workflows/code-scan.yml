@@ -5,11 +5,13 @@ on:
   # Triggers the workflow on push or pull request events
   push:
     branches: ["main", "feature/dev"]
-    paths: ["**.tf", "**.tfvars"]
+    paths-ignore:
+      - "**/README.md"
+    # paths: ["**.tf", "**.tfvars"]
   pull_request:
     branches: ["main", "feature/dev"]
-    paths: ["**.tf", "**.tfvars"]
-    # types: [opened, synchronize, reopened]
+    # paths: ["**.tf", "**.tfvars"]
+    types: [opened, synchronize, reopened]
   # Allows you to run this workflow manually from the Actions tab
   # workflow_dispatch:
 
