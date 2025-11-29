@@ -100,6 +100,7 @@ jobs:
         uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: latest
+          cache: true
         # run: |
         #   curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
       - name: Show version
