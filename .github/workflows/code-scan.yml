@@ -99,6 +99,9 @@ jobs:
       - name: Setup TFLint
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          cache: true
+      - name: Show version
+        run: tflint --version
       - name: Install Terraform plugins
         run: tflint --init
       - name: Lint Terraform files

@@ -95,9 +95,9 @@ rule "aws_instance_invalid_type" {
   enabled = true
 }
 
-# rule "terraform_required_version" {
-#   enabled = true
-# }
-# rule "terraform_required_providers" {
-#   enabled = true
-# }
+rule "terraform_required_version" {
+  enabled = false
+}
+rule "terraform_required_providers" {
+  enabled = false
+}
