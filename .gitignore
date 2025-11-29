@@ -37,3 +37,8 @@ override.tf.json
 terraform.rc
 
 .DS_Store
+.vscode/
+.vscode/*.*
+.idea/
+*.log
+*.swp
