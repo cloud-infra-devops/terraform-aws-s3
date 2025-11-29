@@ -164,8 +164,10 @@ jobs:
       # Checkov - Prevent cloud misconfigurations and find vulnerabilities during build-time in infrastructure as code
       - name: Run Checkov
         id: checkov
+        #https://hub.docker.com/r/bridgecrew/checkov
         run: |
-          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov --directory /tf --skip-check CKV2_GHA_1 --framework terraform --log-level DEBUG --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO --output-format sarif --output-file-path results.sarif
+          docker pull bridgecrew/checkov:latest 
+          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --skip-check CKV2_GHA_1 --framework terraform --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO --output sarif --output-file-path results.sarif
         continue-on-error: false
       # - name: Set up Python 3
       #   uses: actions/setup-python@v4
