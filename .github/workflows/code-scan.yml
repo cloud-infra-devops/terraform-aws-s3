@@ -100,7 +100,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
-        # uses: actions/checkout@v4
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v6
         with:
@@ -127,13 +126,6 @@ jobs:
         uses: actions/checkout@v5.0.1
         with:
           persist-credentials: false
-      # - name: tfsec
-      #   uses: aquasecurity/tfsec-action@v1.0.0
-      #   with:
-      #     soft_fail: true
-      # - name: Setup tfsec
-      #   run: |
-      #     curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install.sh | bash
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
@@ -144,7 +136,7 @@ jobs:
             --out tfsec.sarif
             --soft-fail
 
-      - name: tfsec
+      - name: tfsec scan results to SARIF
         uses: aquasecurity/tfsec-sarif-action@v0.1.0
         with:
           sarif_file: tfsec.sarif
@@ -172,17 +164,8 @@ jobs:
       # Checkov - Prevent cloud misconfigurations and find vulnerabilities during build-time in infrastructure as code
       - name: Run Checkov
         id: checkov
-        uses: bridgecrewio/checkov-action@v12.3075.0
-        with:
-          # This will create checkov scan --> results.sarif file
-          directory: .
-          log_level: DEBUG
-          framework: terraform
-          quiet: true
-          hard_fail_on: HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO
-          output_format: sarif
-          output_file_path: results.sarif
-          skip_check: CKV2_GHA_1
+        run: |
+          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov --directory /tf --skip-check CKV2_GHA_1 --framework terraform --log-level DEBUG --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO --output-format sarif --output-file-path results.sarif
         continue-on-error: false
       # - name: Set up Python 3
       #   uses: actions/setup-python@v4
@@ -207,13 +190,12 @@ jobs:
       #   # continue-on-error: true
       #   continue-on-error: false
       - name: Upload SARIF (Checkov)
-        uses:
-          github/codeql-action/upload-sarif@v4
-          # Results are generated only on a success or failure
-          # this is required since GitHub by default won't run the next step
-          # when the previous one has failed. Security checks that do not pass will 'fail'.
-          # An alternative is to add `continue-on-error: true` to the previous step
-          # Or 'soft_fail: true' to checkov.
+        # Results are generated only on a success or failure
+        # this is required since GitHub by default won't run the next step
+        # when the previous one has failed. Security checks that do not pass will 'fail'.
+        # An alternative is to add `continue-on-error: true` to the previous step
+        # Or 'soft_fail: true' to checkov.
+        uses: github/codeql-action/upload-sarif@v4
         if: success() || failure()
         with:
           sarif_file: results.sarif
