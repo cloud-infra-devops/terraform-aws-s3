@@ -167,16 +167,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
-
+      - name: Set up Python 3
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
       - name: Checkov GitHub Action
         id: checkov
         uses: bridgecrewio/checkov-action@v12.3075.0
         with:
-          # This will add both a CLI output to the console and create a results.sarif file
+          # This will create checkov scan results.sarif file
           directory: .
           framework: terraform
           quiet: true
-          soft_fail: true
+          soft_fail: false
+          hard_fail_on: HIGH,CRITICAL
           output_format: sarif
           output_file_path: results.sarif
           # output_format: cli,sarif
