@@ -27,7 +27,7 @@ permissions:
 # This workflow contains the following sequential jobs - "checkov_scan", "tflint", "plan" and "apply"
 jobs:
   checkov_scan:
-    name: Run Checkov
+    name: "Checkov"
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     defaults:
@@ -111,7 +111,7 @@ jobs:
         run: tflint -f compact --recursive
 
   tfsec:
-    name: tfsec
+    name: "Tfsec"
     runs-on: ubuntu-latest
 
     steps:
@@ -147,7 +147,7 @@ jobs:
           sarif_file: tfsec.sarif
 
   Trivy:
-    name: "Trivy IaC Scan"
+    name: "Trivy"
     runs-on: ubuntu-latest
 
     steps:
