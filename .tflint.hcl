@@ -10,11 +10,6 @@ plugin "terraform" {
   version = "0.13.0"
   source  = "github.com/terraform-linters/tflint-ruleset-terraform"
 }
-# config {
-#   # force               = false
-#   # call_module_type    = "all" # or "local"
-#   # disabled_by_default = false
-# }
 
 # Disallow deprecated (0.11-style) interpolation
 rule "terraform_deprecated_interpolation" {
@@ -90,9 +85,9 @@ rule "terraform_unused_required_providers" {
 rule "aws_resource_missing_tags" {
   enabled = true
   tags = [
-    "Project",
     "Environment",
-    "Owner",
+    "Project",
+    "Region",
   ]
 }
 

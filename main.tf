@@ -8,7 +8,9 @@ resource "aws_s3_bucket" "this" {
   tags = merge(
     var.tags,
     {
-      Name = lower("${var.project}-${var.env}-${data.aws_region.this.region}")
+      Environment = lower(var.env)
+      Project     = lower(var.project)
+      Region     = lower(data.aws_region.this.region)
     }
   )
 }
@@ -103,7 +105,14 @@ resource "aws_kms_key" "this" {
   enable_key_rotation     = true
   deletion_window_in_days = 7
   policy                  = data.aws_iam_policy_document.s3_kms_policy.json
-  tags                    = var.tags
+  tags = merge(
+    var.tags,
+    {
+      Environment = lower(var.env)
+      Project     = lower(var.project)
+      Region     = lower(data.aws_region.this.region)
+    }
+  )
 }
 
 # Create an alias for the generated key

@@ -1,18 +1,14 @@
-variable "bucket_policy" {
-  description = "Override the resource policy on the bucket"
-  type        = string
-  default     = null
-}
+# variable "bucket_policy" {
+#   description = "Override the resource policy on the bucket"
+#   type        = string
+#   default     = null
+# }
 
 variable "s3_name_prefix" {
   type        = string
   description = "The name of the s3 bucket"
 }
-# variable "bucket_prefix" {
-#   type        = string
-#   description = "(required since we are not using 'bucket') Creates a unique bucket name beginning with the specified prefix. Conflicts with bucket."
-#   # default     = "374278"
-# }
+
 variable "tags" {
   type        = map(string)
   description = "Tags to be applied to created resources"
@@ -36,16 +32,19 @@ variable "env" {
 }
 
 variable "default_retention_noncurrent_days" {
+  description = "retention non-concurrent days"
   type    = string
   default = 180
 }
 
 variable "archive_retention_noncurrent_days" {
+  description = "archive retention non-concurrent days"
   type    = string
   default = 90
 }
 
 variable "versioning" {
+  description = "Bucket Versioning"
   type    = string
   default = "Disabled"
   validation {

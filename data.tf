@@ -6,8 +6,8 @@ locals {
   kms_master_key_id = var.kms_key_id != null ? var.kms_key_id : (length(aws_kms_key.this) > 0 ? aws_kms_key.this[0].arn : null)
   account_id        = data.aws_caller_identity.this.account_id
   account_arn       = "arn:aws:iam::${local.account_id}:root"
-  bucket_arn        = "arn:aws:s3:::${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
   region            = data.aws_region.this.region
+  # bucket_arn        = "arn:aws:s3:::${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
   # sid_suffix           = join("", regexall("[[:alnum:]]+", var.bucket_prefix))
   # read_principals      = concat(var.read_principals, local.readwrite_principals)
   # readwrite_principals = coalescelist(var.readwrite_principals, [local.account_arn])
@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "this" {
     ]
     resources = [
       "${aws_s3_bucket.this.arn}/*",
-      "${aws_s3_bucket.this.arn}"
+      aws_s3_bucket.this.arn
     ]
   }
 }
