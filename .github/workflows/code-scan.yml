@@ -165,11 +165,11 @@ jobs:
       - name: Run Checkov
         id: checkov
         #https://hub.docker.com/r/bridgecrew/checkov
-        run: |
-          docker pull bridgecrew/checkov:latest 
-          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --skip-check CKV2_GHA_1 --framework terraform --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO
         # run: |
-        #    docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov --directory /tf --skip-check CKV2_GHA_1 --output sarif --output-file-path results.sarif
+        #   docker pull bridgecrew/checkov:latest
+        #   docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --skip-check CKV2_GHA_1 --framework terraform --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO
+        run: |
+          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov --directory /tf --skip-check CKV2_GHA_1
         continue-on-error: false
       # - name: Set up Python 3
       #   uses: actions/setup-python@v4
@@ -241,7 +241,7 @@ jobs:
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.2.3
         with:
-          version: 0.67.2
+          version: latest
           # version: v0.61.0
           cache: true
 
