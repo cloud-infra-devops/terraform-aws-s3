@@ -169,7 +169,8 @@ jobs:
         #   docker pull bridgecrew/checkov:latest
         #   docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --skip-check CKV2_GHA_1 --framework terraform --quiet --hard-fail-on HIGH,CRITICAL,MEDIUM,LOW,UNKNOWN,INFO
         run: |
-          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov --directory /tf --skip-check CKV2_GHA_1
+          docker pull bridgecrew/checkov:latest
+          docker run -t -v ${{ github.workspace }}:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --skip-check CKV2_GHA_1
         continue-on-error: false
       # - name: Set up Python 3
       #   uses: actions/setup-python@v4
