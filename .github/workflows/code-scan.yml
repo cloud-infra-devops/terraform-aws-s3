@@ -7,10 +7,9 @@ on:
     branches: ["main", "feature/dev"]
     paths-ignore:
       - "**/README.md"
-    # paths: ["**.tf", "**.tfvars"]
+
   pull_request:
     branches: ["main"]
-    # paths: ["**.tf", "**.tfvars"]
     types: [opened, synchronize, reopened]
   # Allows you to run this workflow manually from the Actions tab
   # workflow_dispatch:
@@ -206,27 +205,27 @@ jobs:
       #   with:
       #     sarif_file: results.sarif
 
-  # terraform:
-  #   needs: checkov
-  #   name: "Terraform"
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v5.0.1
-  #     - uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         terraform_version: latest
-  #         terraform_wrapper: false
-  #     - name: Terraform Format
-  #       run: terraform fmt
-  #     - name: Terraform Init
-  #       run: terraform init
-  #     - name: Terraform Validate and Plan with Checkov
-  #       run: |
-  #         terraform validate
-  #         terraform plan -input=false -out tfplan
-  #         terraform show -json tfplan | jq '.' > tfplan.json
-  #         checkov -f tfplan.json
+  terraform:
+    needs: checkov
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+          terraform_wrapper: false
+      - name: Terraform Format
+        run: terraform fmt
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Validate and Plan with Checkov
+        run: |
+          terraform validate
+          terraform plan -input=false -out tfplan
+          terraform show -json tfplan | jq '.' > tfplan.json
+          checkov -f tfplan.json
 
   Trivy:
     name: "Trivy"
@@ -243,7 +242,6 @@ jobs:
         uses: aquasecurity/setup-trivy@v0.2.3
         with:
           version: latest
-          # version: v0.61.0
           cache: true
 
       - name: Run Trivy vulnerability scanner in fs mode
@@ -282,151 +280,4 @@ jobs:
           working-dir: .
           output-file: README.md
           output-method: inject
-          git-push: "true"
-
-  # plan:
-  #   name: "Terraform Plan"
-  #   runs-on: ubuntu-latest
-  #   needs: [checkov_scan, tflint]
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   env:
-  #     TF_CLOUD_ORGANIZATION: "cloud-infra-dev"
-  #     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
-  #     # TF_WORKSPACE: "github-actions-oidc-hcp-terraform"
-  #     TF_WORKSPACE: "etl-datapipeline-demo-s3-lambda-glue"
-  #     CONFIG_DIRECTORY: "./"
-  #     TF_LOG: INFO
-
-  #   steps:
-  #     - name: "Checkout code from Repository (same as git clone)"
-  #       uses: actions/checkout@v4
-
-  #     # - name: Upload Configuration
-  #     #   uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
-  #     #   id: plan-upload
-  #     #   with:
-  #     #     workspace: ${{ env.TF_WORKSPACE }}
-  #     #     directory: ${{ env.CONFIG_DIRECTORY }}
-  #     #     speculative: true
-
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         role-session-name: ${{ secrets.ROLE_SESSION_NAME}}
-  #         aws-region: ${{ secrets.AWS_REGION }}
-
-  #     - name: Verify IAM Role Assumption
-  #       run: |
-  #         aws sts get-caller-identity
-
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-  #         terraform_version: 1.14.0
-
-  #     - name: Terraform Init
-  #       id: init
-  #       run: |
-  #         echo -e "access_key = \"${AWS_ACCESS_KEY_ID}\"\nsecret_key = \"${AWS_SECRET_ACCESS_KEY}\"\ntoken = \"${AWS_SESSION_TOKEN}\"\nregion = \"${AWS_REGION}\"" | tee credentials.auto.tfvars
-  #         terraform init
-  #       env:
-  #         TF_LOG: ERROR
-
-  #     - name: Terraform Fmt
-  #       id: fmt
-  #       run: terraform fmt --recursive
-
-  #     - name: Terraform Validate
-  #       id: validate
-  #       run: terraform validate
-  #       env:
-  #         TF_LOG: ERROR
-
-  #     # Generates an execution plan for Terraform
-  #     - name: Terraform Plan
-  #       run: terraform plan -var-file="credentials.auto.tfvars" -input=false -out=tfplan
-  #       continue-on-error: true # "continue-on-error: true" ensures the workflow continues even if the plan fails, so you still get feedback about what went wrong
-  #       env:
-  #         TF_VAR_read_only: true
-  #         TF_LOG: ERROR
-
-  #     - name: Upload Plan Artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: tfplan
-  #         path: tfplan
-
-  #     # - name: Save Terraform Plan Output
-  #     #   if: github.event_name == 'pull_request'
-  #     #   run: terraform show -json tfplan > plan.json
-  #     #   env:
-  #     #     TF_LOG: ERROR
-
-  #     # - name: Create PR Comment with Plan Output
-  #     #   if: github.event_name == 'pull_request'
-  #     #   uses: actions/github-script@v6
-  #     #   with:
-  #     #     script: |
-  #     #       const fs = require('fs');
-  #     #       const planOutput = fs.readFileSync('plan.json', 'utf8');
-  #     #       const comment = `### Terraform Plan Result\n\`\`\`json\n${planOutput}\n\`\`\``;
-  #     #       const issue_number = context.payload.pull_request.number;
-  #     #       const owner = context.repo.owner;
-  #     #       const repo = context.repo.repo;
-  #     #       await github.rest.issues.createComment({
-  #     #         owner,
-  #     #         repo,
-  #     #         issue_number,
-  #     #         body: comment,
-  #     #       });
-
-  # apply:
-  #   name: "Terraform Apply"
-  #   runs-on: ubuntu-latest
-  #   needs: [plan]
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   env:
-  #     TF_CLOUD_ORGANIZATION: "cloud-infra-dev"
-  #     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
-  #     # TF_WORKSPACE: "github-actions-oidc-hcp-terraform"
-  #     TF_WORKSPACE: "etl-datapipeline-demo-s3-lambda-glue"
-  #     CONFIG_DIRECTORY: "./"
-  #     TF_LOG: INFO
-  #     AWS_REGION: ${{ secrets.AWS_REGION }}
-
-  #   steps:
-  #     - name: "Checkout code from Repository (same as git clone)"
-  #       uses: actions/checkout@v4
-
-  #     - name: "Configure AWS Credentials"
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         role-session-name: ${{ secrets.ROLE_SESSION_NAME}}
-  #         aws-region: ${{ secrets.AWS_REGION }}
-
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-  #         terraform_version: 1.14.0
-
-  #     - name: Download Plan Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: tfplan
-
-  #     - name: Terraform Init
-  #       run: terraform init
-
-  #     - name: Terraform Apply
-  #       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  #       run: terraform apply -auto-approve tfplan
-  #       env:
-  #         TF_LOG: ERROR
+          git-push: true
