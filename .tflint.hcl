@@ -1,5 +1,13 @@
 # https://gist.githubusercontent.com/guivin/bcf328481350c6fc97ffbdcf832573f9/raw/21c513ad05af066559141f3edf022df29ad7e9e0/.tflint.hcl
-# https://github.com/terraform-linters/tflint-ruleset-aws
+
+tflint {
+  required_version = ">= 0.50"
+}
+config {
+  module              = true
+  force               = false
+  disabled_by_default = false
+}
 plugin "aws" {
   enabled = true
   version = "0.44.0"
