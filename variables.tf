@@ -7,11 +7,7 @@
 variable "s3_name_prefix" {
   type        = string
   description = "The name of the s3 bucket"
-  default     = ""
-  validation {
-    condition     = var.s3_name_prefix != ""
-    error_message = "s3_name_prefix must not be empty"
-  }
+  default     = null
 }
 
 variable "tags" {
@@ -84,7 +80,7 @@ variable "enable_kms" {
     condition     = var.enable_kms != null ? var.enable_kms == true || var.enable_kms == false : true
     error_message = "enable_kms must be a boolean value (true or false) or null"
   }
-  default     = null
+  default     = false
 }
 variable "kms_key_id" {
   description = "Optional KMS CMK ID or ARN to use for aws:kms encryption. If null, a new CMK will be created when `enable_kms` is true."
