@@ -5,8 +5,8 @@
 # }
 
 variable "s3_name_prefix" {
-  type        = string
   description = "The name of the s3 bucket"
+  type        = string
   default     = null
 }
 
@@ -76,11 +76,11 @@ variable "versioning" {
 variable "enable_kms" {
   description = "Enable KMS-backed server-side encryption (aws:kms). If false, AES256 will be used."
   type        = bool
+  default     = false
   validation {
     condition     = var.enable_kms != null ? var.enable_kms == true || var.enable_kms == false : true
     error_message = "enable_kms must be a boolean value (true or false) or null"
   }
-  default     = false
 }
 variable "kms_key_id" {
   description = "Optional KMS CMK ID or ARN to use for aws:kms encryption. If null, a new CMK will be created when `enable_kms` is true."
