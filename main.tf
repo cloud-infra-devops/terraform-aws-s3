@@ -10,7 +10,8 @@ resource "aws_s3_bucket" "this" {
     {
       Environment = lower(var.env)
       Project     = lower(var.project)
-      Region     = lower(data.aws_region.this.region)
+      Region      = lower(var.aws_region)
+      # Region     = lower(data.aws_region.this.region)
     }
   )
 }
@@ -110,7 +111,8 @@ resource "aws_kms_key" "this" {
     {
       Environment = lower(var.env)
       Project     = lower(var.project)
-      Region     = lower(data.aws_region.this.region)
+      Region      = lower(var.aws_region)
+      # Region     = lower(data.aws_region.this.region)
     }
   )
 }

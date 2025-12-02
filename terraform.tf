@@ -9,5 +9,5 @@ terraform {
 }
 
 provider "aws" {
-  region = lower(data.aws_region.this.region)
+  region = lower(var.aws_region)
 }

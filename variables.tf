@@ -3,11 +3,11 @@
 #   type        = string
 #   default     = null
 # }
-# variable "aws_region" {
-#   description = "AWS Region"
-#   type = string
-#   default = "us-west-2"
-# }
+variable "aws_region" {
+  description = "AWS Region"
+  type = string
+  default = "us-west-2"
+}
 variable "s3_name_prefix" {
   description = "The name of the s3 bucket"
   type        = string
