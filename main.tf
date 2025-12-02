@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "this" {
-  bucket = var.s3_name_prefix != null ? "${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}" : null
-  region = local.region
+  bucket = var.s3_name_prefix != null ? "${var.s3_name_prefix}-${var.project}-${var.env}-${var.aws_region}" : null
+  region = var.aws_region
   lifecycle {
     prevent_destroy = false
   }
@@ -10,7 +10,8 @@ resource "aws_s3_bucket" "this" {
     {
       Environment = lower(var.env)
       Project     = lower(var.project)
-      Region     = lower(data.aws_region.this.region)
+      Region      = lower(var.aws_region)
+      # Region     = lower(data.aws_region.this.region)
     }
   )
 }
@@ -69,7 +70,7 @@ resource "aws_s3_bucket_acl" "s3_acl" {
 }
 
 resource "aws_s3_bucket_metric" "enable-metrics-bucket" {
-  bucket = "${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  bucket = "${var.s3_name_prefix}-${var.project}-${var.env}-${var.aws_region}"
   name   = "EntireBucket"
 }
 
@@ -101,7 +102,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this_aes256" {
 resource "aws_kms_key" "this" {
   depends_on              = [data.aws_iam_policy_document.s3_kms_policy]
   count                   = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  description             = "KMS Encryption Key for bucket ${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  description             = "KMS Encryption Key for bucket ${var.s3_name_prefix}-${var.project}-${var.env}-${var.aws_region}"
   enable_key_rotation     = true
   deletion_window_in_days = 7
   policy                  = data.aws_iam_policy_document.s3_kms_policy.json
@@ -110,7 +111,8 @@ resource "aws_kms_key" "this" {
     {
       Environment = lower(var.env)
       Project     = lower(var.project)
-      Region     = lower(data.aws_region.this.region)
+      Region      = lower(var.aws_region)
+      # Region     = lower(data.aws_region.this.region)
     }
   )
 }
@@ -119,7 +121,7 @@ resource "aws_kms_key" "this" {
 resource "aws_kms_alias" "this" {
   depends_on    = [aws_kms_key.this]
   count         = var.enable_kms && var.kms_key_id == null ? 1 : 0
-  name          = "alias/${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.this.region}"
+  name          = "alias/${var.s3_name_prefix}-${var.project}-${var.env}-${var.aws_region}"
   target_key_id = aws_kms_key.this[0].arn
 }
 
