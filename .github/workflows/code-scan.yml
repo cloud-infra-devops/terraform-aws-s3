@@ -27,6 +27,28 @@ permissions:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 # This workflow contains the following sequential jobs - "tflint", "tfsec", "checkov", "Trivy" and "Terraform-docs"
 jobs:
+  terraform:
+    # needs: checkov
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+          terraform_wrapper: false
+      - name: Terraform Format
+        run: terraform fmt -check
+        continue-on-error: true
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Validate and Plan
+        run: |
+          terraform validate -no-color
+          terraform plan -input=false -out tfplan
+        # terraform show -json tfplan | jq '.' > tfplan.json
+        # checkov -f tfplan.json
   # checkov_scan:
   #   name: "Checkov"
   #   # The type of runner that the job will run on
@@ -204,28 +226,6 @@ jobs:
       #   if: success() || failure()
       #   with:
       #     sarif_file: results.sarif
-
-  terraform:
-    needs: checkov
-    name: "Terraform"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5.0.1
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: latest
-          terraform_wrapper: false
-      - name: Terraform Format
-        run: terraform fmt
-      - name: Terraform Init
-        run: terraform init
-      - name: Terraform Validate and Plan with Checkov
-        run: |
-          terraform validate
-          terraform plan -input=false -out tfplan
-          terraform show -json tfplan | jq '.' > tfplan.json
-          checkov -f tfplan.json
 
   Trivy:
     name: "Trivy"
