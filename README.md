@@ -32,7 +32,6 @@ No modules.
 | [aws_s3_bucket_server_side_encryption_configuration.this_aes256](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.this_kms](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
 | [aws_s3_bucket_versioning.this](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/resources/s3_bucket_versioning) | resource |
-| [aws_caller_identity.this](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.s3_kms_policy](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.this](https://registry.terraform.io/providers/hashicorp/aws/6.23.0/docs/data-sources/iam_policy_document) | data source |
 
