@@ -41,13 +41,14 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_archive_retention_noncurrent_days"></a> [archive\_retention\_noncurrent\_days](#input\_archive\_retention\_noncurrent\_days) | archive retention non-concurrent days | `string` | `90` | no |
+| <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | The AWS account ID to deploy resources | `string` | `"211125325120"` | no |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS Region | `string` | `"us-west-2"` | no |
 | <a name="input_default_retention_noncurrent_days"></a> [default\_retention\_noncurrent\_days](#input\_default\_retention\_noncurrent\_days) | retention non-concurrent days | `string` | `180` | no |
 | <a name="input_enable_kms"></a> [enable\_kms](#input\_enable\_kms) | Enable KMS-backed server-side encryption (aws:kms). If false, AES256 will be used. | `bool` | `false` | no |
 | <a name="input_env"></a> [env](#input\_env) | value representing the environment (e.g., dev, staging, prod) | `string` | `"sbx"` | no |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | Optional KMS CMK ID or ARN to use for aws:kms encryption. If null, a new CMK will be created when `enable_kms` is true. | `string` | `null` | no |
 | <a name="input_project"></a> [project](#input\_project) | Project name | `string` | `"json-to-csv-datapipeline"` | no |
-| <a name="input_s3_name_prefix"></a> [s3\_name\_prefix](#input\_s3\_name\_prefix) | The name of the s3 bucket | `string` | `null` | no |
+| <a name="input_s3_name_prefix"></a> [s3\_name\_prefix](#input\_s3\_name\_prefix) | The name of the s3 bucket | `string` | `"374278"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to be applied to created resources | `map(string)` | `{}` | no |
 | <a name="input_versioning"></a> [versioning](#input\_versioning) | Bucket Versioning | `string` | `"Disabled"` | no |
 
