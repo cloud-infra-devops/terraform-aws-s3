@@ -2,11 +2,7 @@ variable "bucket_name" {
   description = "Name of the S3 bucket to create"
   type        = string
 }
-# variable "s3_name_prefix" {
-#   description = "s3 bucket name prefix"
-#   type        = string
-#   default     = "374278"
-# }
+
 variable "project" {
   description = "Project name"
   type        = string
