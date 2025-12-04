@@ -327,8 +327,7 @@ resource "null_resource" "input_validation_existing_log_group" {
 }
 # CloudWatch Log Group (create or reference existing)
 resource "aws_cloudwatch_log_group" "cloudtrail" {
-  count = var.enable_cloudtrail && !var.use_existing_cloudwatch_log_group ? 1 : 0
-
+  count             = var.enable_cloudtrail && !var.use_existing_cloudwatch_log_group ? 1 : 0
   name              = var.cloudwatch_log_group_name != "" ? var.cloudwatch_log_group_name : "/aws/cloudtrail/s3/${var.bucket_name}"
   retention_in_days = var.cloudwatch_log_retention_days
   tags              = merge(var.tags, { "Name" = "${var.bucket_name}-cloudtrail-log-group" })
@@ -354,7 +353,7 @@ resource "aws_iam_role" "cloudtrail" {
   tags = var.tags
 }
 
-# Policy allowing CloudTrail to create log streams and put events, restricted to the specific log group ARN
+# Policy allowing CloudTrail to create log streams and put events, restricted to the specific log group ARN (and its streams).
 resource "aws_iam_role_policy" "cloudtrail_policy" {
   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
 
@@ -368,10 +367,13 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
         Effect = "Allow"
         Action = [
           "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
         ]
         Resource = [
-          "${local.cloudwatch_log_group_arn}:*"
+          "${local.cloudwatch_log_group_arn}:*",
+          "${local.cloudwatch_log_group_arn}"
         ]
       },
       {
@@ -389,9 +391,9 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
 
 # CloudTrail requires an S3 bucket to store event files if we create CloudTrail here
 resource "aws_s3_bucket" "cloudtrail_bucket" {
-  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-  bucket = "${var.bucket_name}-cloudtrail-logs"
-
+  count         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+  bucket        = "${var.bucket_name}-cloudtrail-logs"
+  acl           = var.allow_bucket_acl ? "private" : null
   force_destroy = true
 
   tags = merge(var.tags, {
@@ -412,11 +414,11 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 }
 
-resource "aws_s3_bucket_acl" "cloudtrail_bucket_acl" {
-  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-  bucket = aws_s3_bucket.cloudtrail_bucket[0].id
-  acl    = "private"
-}
+# resource "aws_s3_bucket_acl" "cloudtrail_bucket_acl" {
+#   count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+#   bucket = aws_s3_bucket.cloudtrail_bucket[0].id
+#   acl    = "private"
+# }
 
 resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
   count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
@@ -429,6 +431,12 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
 }
 
 resource "aws_cloudtrail" "this" {
+  # Explicit dependencies to ensure log group and role/policy are present before CloudTrail creation.
+  depends_on = [
+    aws_cloudwatch_log_group.cloudtrail,
+    aws_iam_role.cloudtrail,
+    aws_iam_role_policy.cloudtrail_policy
+  ]
   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
 
   name                          = "${var.bucket_name}-cloudtrail"
@@ -450,13 +458,6 @@ resource "aws_cloudtrail" "this" {
   }
 
   tags = var.tags
-
-  # Explicit dependencies to ensure log group and role/policy are present before CloudTrail creation.
-  depends_on = [
-    aws_cloudwatch_log_group.cloudtrail,
-    aws_iam_role.cloudtrail,
-    aws_iam_role_policy.cloudtrail_policy
-  ]
 }
 
 # Metric filters and alarms to monitor S3 data events, AccessDenied events and large uploads in CloudTrail logs

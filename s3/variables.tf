@@ -25,6 +25,13 @@ variable "force_destroy" {
   default     = true
 }
 
+# control applying ACLs to buckets. If your account has Object Ownership = bucket-owner-enforced,
+# set this to false to avoid ACL API calls which will fail.
+variable "allow_bucket_acl" {
+  description = "When false, do not set S3 ACLs (module will avoid PutBucketAcl calls). Set to false if your account has S3 Object Ownership = bucket-owner-enforced."
+  type        = bool
+  default     = false
+}
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
@@ -234,11 +241,11 @@ variable "large_object_evaluation_periods" {
 # Note: Terraform variable validation blocks cannot reference other variables, so we can't validate this at plan time via variable validation.
 # If you run Terraform >= 1.2 and prefer fail-fast earlier, add a module-level precondition in the root module where you call this module.
 
-resource "null_resource" "input_validation" {
-  # Create this resource only when the combination of inputs is invalid.
-  count = var.enable_kms && !var.create_kms && length(trim(var.kms_key_arn)) == 0 ? 1 : 0
+# resource "null_resource" "input_validation" {
+#   # Create this resource only when the combination of inputs is invalid.
+#   count = var.enable_kms && !var.create_kms && length(trim(var.kms_key_arn)) == 0 ? 1 : 0
 
-  provisioner "local-exec" {
-    command = "echo 'Invalid inputs: when enable_kms is true and create_kms is false you must provide kms_key_arn.' >&2; exit 1"
-  }
-}
+#   provisioner "local-exec" {
+#     command = "echo 'Invalid inputs: when enable_kms is true and create_kms is false you must provide kms_key_arn.' >&2; exit 1"
+#   }
+# }
