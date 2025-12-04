@@ -143,7 +143,7 @@ resource "aws_kms_key" "this" {
         Effect    = "Allow"
         Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
         Action    = "kms:*"
-        Resource  = [aws_kms_key.this[0].arn]
+        Resource  = ["*"]
       },
       # Allow S3 service in this account to use the key (for server-side encryption),
       # limited by aws:SourceAccount to this account to reduce scope.
