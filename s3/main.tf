@@ -268,15 +268,19 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
 }
 
 # CloudTrail requires an S3 bucket to store event files if we create CloudTrail here
-# CloudTrail requires an S3 bucket to store event files if we create CloudTrail here
 resource "aws_s3_bucket" "cloudtrail_bucket" {
   count         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
   bucket        = "${var.bucket_name}-cloudtrail-logs"
-  acl           = var.allow_bucket_acl ? "private" : null
   force_destroy = true
   tags = merge(var.tags, {
     "Name" = "${var.bucket_name}-cloudtrail-storage"
   })
+}
+
+resource "aws_s3_bucket_acl" "cloudtrail_bucket" {
+  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail && var.allow_bucket_acl ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail_bucket[0].id
+  acl    = "private"
 }
 resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
   count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0

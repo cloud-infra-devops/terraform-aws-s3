@@ -80,7 +80,11 @@ output "cloudtrail_name" {
   value       = (var.enable_cloudtrail && !var.use_existing_cloudtrail) ? aws_cloudtrail.this[0].name : var.existing_cloudtrail_name
 }
 
-output "cloudwatch_log_group" {
+output "cloudtrail_arn" {
+  description = "CloudTrail ARN (if cloudtrail is enabled and was created by module)"
+  value       = (var.enable_cloudtrail && !var.use_existing_cloudtrail) ? aws_cloudtrail.this[0].arn : var.existing_cloudtrail_arn
+}
+output "cloudwatch_log_group_name" {
   description = "CloudWatch Log Group name used for CloudTrail S3 events (if created or provided)"
   value       = local.cloudwatch_log_group_name
 }

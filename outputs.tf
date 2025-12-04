@@ -1,30 +1,39 @@
-# output "policy_json" {
-#   description = "Required IAM policies"
-#   value       = data.aws_iam_policy_document.this.json
-# }
+output "s3_bucket_name" {
+  value = module.s3-bucket.bucket_id
+}
 
-# output "name" {
-#   description = "Name of the created bucket"
-#   value       = aws_s3_bucket.this.bucket
-# }
+output "s3_bucket_arn" {
+  value = module.s3-bucket.bucket_arn
+}
 
-# output "s3_bucket_id" {
-#   description = "s3 bucket id"
-#   value = aws_s3_bucket.this.id
-# }
-# output "s3_bucket_arn" {
-#   description = "s3 bucket arn"
-#   value = aws_s3_bucket.this.arn
-# }
-# output "s3_bucket_domain_name" {
-#   description = "s3 bucket domain name"
-#   value = aws_s3_bucket.this.bucket_domain_name
-# }
-# output "s3_hosted_zone_id" {
-#   description = "s3 hosted zone id"
-#   value = aws_s3_bucket.this.hosted_zone_id
-# }
-# output "s3_bucket_region" {
-#   description = "s3 bucket region"
-#   value = aws_s3_bucket.this.region
-# }
+output "s3_logging_bucket" {
+  value = module.s3-bucket.logging_bucket
+}
+
+output "kms_key_arn" {
+  value = module.s3-bucket.kms_key_arn
+}
+
+output "kms_key_alias" {
+  value = module.s3-bucket.kms_key_alias
+}
+output "kms_key_alias_arn" {
+  value = module.s3-bucket.kms_key_alias_arn
+}
+
+output "s3_buckets_encryption" {
+  value = module.s3-bucket.buckets_encryption
+}
+
+output "cloudtrail_name" {
+  value = module.s3-bucket.cloudtrail_name
+}
+output "cloudtrail_arn" {
+  value = module.s3-bucket.cloudtrail_arn
+}
+output "cloudwatch_log_group_name" {
+  value = module.s3-bucket.cloudwatch_log_group_name
+}
+output "cloudwatch_log_group_arn" {
+  value = module.s3-bucket.cloudwatch_log_group_arn
+}
