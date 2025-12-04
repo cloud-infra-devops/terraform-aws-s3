@@ -225,12 +225,24 @@ variable "large_object_evaluation_periods" {
 #   default     = "python3.12"
 # }
 
-# Validation: If enable_kms is true and create_kms is false, require a kms_key_arn
-variable "validation_dummy" {
-  type    = string
-  default = ""
-  validation {
-    condition     = !(var.enable_kms && !var.create_kms && length(trim(var.kms_key_arn)) == 0)
-    error_message = "When enable_kms is true and create_kms is false you must provide kms_key_arn."
+# # Validation: If enable_kms is true and create_kms is false, require a kms_key_arn
+# variable "validation_dummy" {
+#   type    = string
+#   default = ""
+#   validation {
+#     condition     = !(var.enable_kms && !var.create_kms && length(trim(var.kms_key_arn)) == 0)
+#     error_message = "When enable_kms is true and create_kms is false you must provide kms_key_arn."
+#   }
+# }
+# Cross-variable validation implemented as a runtime check (fails during 'apply' if inputs are invalid).
+# Note: Terraform variable validation blocks cannot reference other variables, so we can't validate this at plan time via variable validation.
+# If you run Terraform >= 1.2 and prefer fail-fast earlier, add a module-level precondition in the root module where you call this module.
+
+resource "null_resource" "input_validation" {
+  # Create this resource only when the combination of inputs is invalid.
+  count = var.enable_kms && !var.create_kms && length(trim(var.kms_key_arn)) == 0 ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "echo 'Invalid inputs: when enable_kms is true and create_kms is false you must provide kms_key_arn.' >&2; exit 1"
   }
 }
