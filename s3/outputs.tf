@@ -30,11 +30,6 @@ output "kms_key_alias_arn" {
 
 # Detailed encryption info per-bucket this module manages (primary, optional logging, optional cloudtrail storage).
 # For buckets not created by the module (e.g., external logging bucket), limited information is returned (name only).
-locals {
-  logging_bucket_obj    = var.create_logging_bucket ? aws_s3_bucket.logging[0] : null
-  cloudtrail_bucket_obj = (var.enable_cloudtrail && !var.use_existing_cloudtrail) ? aws_s3_bucket.cloudtrail_bucket[0] : null
-}
-
 output "buckets_encryption" {
   description = "Map describing encryption configuration for buckets managed by the module. Each entry contains: name, encrypted (bool|null), sse_algorithm (string|null), kms_key_id (string|null). For buckets not created by the module, encrypted/sse_algorithm/kms_key_id may be null."
   value = {
