@@ -42,18 +42,16 @@ resource "aws_s3_bucket" "logging" {
     "Name" = "${var.bucket_name}-logging"
   })
 }
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "logging" {
-  count  = var.create_logging_bucket && var.enable_kms ? 1 : 0
+  count  = var.create_logging_bucket ? 1 : 0
   bucket = aws_s3_bucket.logging[0].id
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn
+      sse_algorithm     = var.enable_kms ? "aws:kms" : "AES256"
+      kms_master_key_id = var.enable_kms ? (var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn) : null
     }
   }
 }
-
 resource "aws_s3_bucket_acl" "logging" {
   count  = var.create_logging_bucket ? 1 : 0
   bucket = aws_s3_bucket.logging[0].id
@@ -124,17 +122,7 @@ resource "aws_s3_bucket_logging" "this" {
   target_bucket = var.logging_bucket_name != "" ? var.logging_bucket_name : aws_s3_bucket.logging[0].id
   target_prefix = "${var.bucket_name}/"
 }
-# Logging bucket encryption config: created only when logging bucket exists
-resource "aws_s3_bucket_server_side_encryption_configuration" "logging" {
-  count  = var.create_logging_bucket ? 1 : 0
-  bucket = aws_s3_bucket.logging[0].id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm     = var.enable_kms ? "aws:kms" : "AES256"
-      kms_master_key_id = var.enable_kms ? (var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn) : null
-    }
-  }
-}
+
 # KMS Key for S3 encryption if requested
 resource "aws_kms_key" "this" {
   count                   = var.enable_kms && var.create_kms ? 1 : 0
