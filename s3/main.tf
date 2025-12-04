@@ -334,13 +334,6 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   tags              = merge(var.tags, { "Name" = "${var.bucket_name}-cloudtrail-log-group" })
 }
 
-# Compute cloudwatch log group name and ARN depending on whether an existing group is used.
-# Use the plain log group name in the ARN construction — do NOT URL-encode slashes.
-locals {
-  cloudwatch_log_group_name = var.use_existing_cloudwatch_log_group ? var.existing_cloudwatch_log_group_name : aws_cloudwatch_log_group.cloudtrail[0].name
-  cloudwatch_log_group_arn  = var.use_existing_cloudwatch_log_group ? "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${var.existing_cloudwatch_log_group_name}" : aws_cloudwatch_log_group.cloudtrail[0].arn
-}
-
 # CloudTrail IAM Role and policy: only create when creating a CloudTrail (not when using an existing CloudTrail)
 resource "aws_iam_role" "cloudtrail" {
   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
