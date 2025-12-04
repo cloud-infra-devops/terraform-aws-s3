@@ -9,7 +9,7 @@ locals {
   logging_bucket_obj        = var.create_logging_bucket ? aws_s3_bucket.logging[0] : null
   cloudtrail_bucket_obj     = (var.enable_cloudtrail && !var.use_existing_cloudtrail) ? aws_s3_bucket.cloudtrail_bucket[0] : null
   cloudwatch_log_group_name = var.use_existing_cloudwatch_log_group ? var.existing_cloudwatch_log_group_name : aws_cloudwatch_log_group.cloudtrail[0].name
-  cloudwatch_log_group_arn  = var.use_existing_cloudwatch_log_group ? "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${replace(var.existing_cloudwatch_log_group_name, "/", "%2F")}" : aws_cloudwatch_log_group.cloudtrail[0].arn
+  cloudwatch_log_group_arn  = var.use_existing_cloudwatch_log_group ? "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${replace(var.existing_cloudwatch_log_group_name, "/", "%2F")}" : aws_cloudwatch_log_group.cloudtrail[0].arn
   # cloudwatch_log_group_name = var.enable_cloudtrail ? (var.create_cloudwatch_log_group ? aws_cloudwatch_log_group.cloudtrail[0].name : var.existing_cloudwatch_log_group_name) : ""
   # sns_topic_arn             = var.create_sns_topic ? aws_sns_topic.alerts[0].arn : var.existing_sns_topic_arn
 }
@@ -74,7 +74,7 @@ resource "aws_s3_bucket_public_access_block" "logging" {
 resource "aws_s3_bucket" "this" {
   depends_on = [aws_s3_bucket.logging]
   # bucket     = var.s3_name_prefix != null ? "${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.current.name}" : null
-  bucket        = var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.env}-${data.aws_region.current.name}"
+  bucket        = var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.env}-${data.aws_region.current.region}"
   force_destroy = var.force_destroy
   tags = merge(var.tags, {
     Environment = lower(var.env)
