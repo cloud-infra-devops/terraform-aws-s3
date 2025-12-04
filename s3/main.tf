@@ -386,12 +386,12 @@ resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
 # }
 
 resource "aws_cloudtrail" "this" {
-  depends_on = compact([
+  depends_on = [
     aws_cloudwatch_log_group.cloudtrail,
     aws_iam_role.cloudtrail,
     aws_iam_role_policy.cloudtrail_policy,
     aws_s3_bucket_policy.cloudtrail_bucket_policy
-  ])
+  ]
   count                         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
   name                          = "${var.bucket_name}-cloudtrail"
   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].bucket
