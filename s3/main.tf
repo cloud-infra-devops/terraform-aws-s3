@@ -188,7 +188,7 @@ resource "aws_kms_key" "this" {
 }
 
 resource "aws_kms_alias" "this" {
-  count         = var.enable_kms && var.create_kms && length(trim(var.kms_alias)) > 0 ? 1 : 0
+  count         = var.enable_kms && var.create_kms && length(trimspace(var.kms_alias)) > 0 ? 1 : 0
   name          = var.kms_alias
   target_key_id = aws_kms_key.this[0].key_id
 }
