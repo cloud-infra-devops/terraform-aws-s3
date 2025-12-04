@@ -13,6 +13,6 @@ variable "aws_account_id" {
 variable "bucket_name" {
   description = "The name of the s3 bucket"
   type        = string
-  default     = "374278"
+  default     = "pdas5"
 }
 
