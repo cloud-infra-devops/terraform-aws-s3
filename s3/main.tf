@@ -336,7 +336,7 @@ resource "aws_cloudtrail" "this" {
   enable_logging                = true
   is_multi_region_trail         = false
   cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail[0].arn
-  cloud_watch_logs_group_arn    = local.cloudwatch_log_group_arn
+  cloud_watch_logs_group_arn    = "${local.cloudwatch_log_group_arn}:*"
 
   event_selector {
     read_write_type           = "All"
