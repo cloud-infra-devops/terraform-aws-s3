@@ -204,6 +204,7 @@ resource "null_resource" "input_validation_existing_log_group" {
     command = "echo 'Invalid inputs: use_existing_cloudwatch_log_group is true but existing_cloudwatch_log_group_name is empty.' >&2; exit 1"
   }
 }
+
 # CloudWatch Log Group (create or reference existing)
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   count             = var.enable_cloudtrail && !var.use_existing_cloudwatch_log_group ? 1 : 0
@@ -250,8 +251,8 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
           "logs:DescribeLogStreams"
         ]
         Resource = [
-          "${local.cloudwatch_log_group_arn}:*",
-          "${local.cloudwatch_log_group_arn}"
+          "${local.cloudwatch_log_group_arn}:*"
+          # "${local.cloudwatch_log_group_arn}"
         ]
       },
       {
@@ -260,7 +261,7 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
           "logs:CreateLogGroup"
         ]
         Resource = [
-          "${local.cloudwatch_log_group_arn}"
+          "${local.cloudwatch_log_group_arn}:*"
         ]
       }
     ]
