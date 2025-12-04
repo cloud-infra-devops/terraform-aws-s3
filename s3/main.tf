@@ -72,9 +72,8 @@ resource "aws_s3_bucket_public_access_block" "logging" {
 
 # The primary bucket
 resource "aws_s3_bucket" "this" {
-  depends_on = [aws_s3_bucket.logging]
-  # bucket     = var.s3_name_prefix != null ? "${var.s3_name_prefix}-${var.project}-${var.env}-${data.aws_region.current.name}" : null
-  bucket        = var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.env}-${data.aws_region.current.region}"
+  depends_on    = [aws_s3_bucket.logging]
+  bucket        = var.bucket_name != "" ? "${var.bucket_name}-${var.project}-${var.env}-${data.aws_region.current.region}" : "${var.project}-${var.env}-${data.aws_region.current.region}"
   force_destroy = var.force_destroy
   tags = merge(var.tags, {
     Environment = lower(var.env)
@@ -92,14 +91,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
     }
   }
 }
-
-resource "aws_s3_bucket_logging" "this" {
-  count         = var.create_logging_bucket || var.logging_bucket_name != "" ? 1 : 0
-  bucket        = aws_s3_bucket.this.id
-  target_bucket = var.logging_bucket_name != "" ? var.logging_bucket_name : aws_s3_bucket.logging[0].id
-  target_prefix = "${var.bucket_name}/"
-}
-
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -127,7 +118,23 @@ resource "aws_s3_bucket_acl" "s3_acl" {
   bucket     = aws_s3_bucket.this.id
   acl        = "private"
 }
-
+resource "aws_s3_bucket_logging" "this" {
+  count         = var.create_logging_bucket || var.logging_bucket_name != "" ? 1 : 0
+  bucket        = aws_s3_bucket.this.id
+  target_bucket = var.logging_bucket_name != "" ? var.logging_bucket_name : aws_s3_bucket.logging[0].id
+  target_prefix = "${var.bucket_name}/"
+}
+# Logging bucket encryption config: created only when logging bucket exists
+resource "aws_s3_bucket_server_side_encryption_configuration" "logging" {
+  count  = var.create_logging_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logging[0].id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = var.enable_kms ? "aws:kms" : "AES256"
+      kms_master_key_id = var.enable_kms ? (var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn) : null
+    }
+  }
+}
 # KMS Key for S3 encryption if requested
 resource "aws_kms_key" "this" {
   count                   = var.enable_kms && var.create_kms ? 1 : 0
@@ -193,122 +200,6 @@ resource "aws_kms_alias" "this" {
   target_key_id = aws_kms_key.this[0].key_id
 }
 
-# # Optional: create the CloudTrail storage bucket if requested
-# # CloudTrail resources (all will be created only if enable_cloudtrail = true)
-# resource "aws_cloudwatch_log_group" "cloudtrail" {
-#   count             = var.enable_cloudtrail && !var.use_existing_cloudwatch_log_group ? 1 : 0
-#   name              = var.cloudwatch_log_group_name != "" ? var.cloudwatch_log_group_name : "/aws/cloudtrail/s3/${var.bucket_name}"
-#   retention_in_days = var.cloudwatch_log_retention_days
-#   tags              = merge(var.tags, { "Name" = "${var.bucket_name}-cloudtrail-log-group" })
-# }
-
-# # CloudTrail IAM Role and policy: only create when creating a CloudTrail (not when using an existing CloudTrail)
-# resource "aws_iam_role" "cloudtrail" {
-#   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-#   name  = "${var.bucket_name}-cloudtrail-to-cw-role"
-#   assume_role_policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Effect    = "Allow"
-#         Principal = { Service = "cloudtrail.amazonaws.com" }
-#         Action    = "sts:AssumeRole"
-#       }
-#     ]
-#   })
-
-#   tags = var.tags
-# }
-
-# # Policy allowing CloudTrail to create log streams and put events, restricted to the specific log group ARN
-# resource "aws_iam_role_policy" "cloudtrail_policy" {
-#   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-#   name  = "${var.bucket_name}-cloudtrail-to-cw-policy"
-#   role  = aws_iam_role.cloudtrail[0].id
-
-#   policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "logs:CreateLogStream",
-#           "logs:PutLogEvents"
-#         ]
-#         Resource = [
-#           "${local.cloudwatch_log_group_arn}:*"
-#         ]
-#       },
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "logs:CreateLogGroup"
-#         ]
-#         Resource = [
-#           "${local.cloudwatch_log_group_arn}"
-#         ]
-#       }
-#     ]
-#   })
-# }
-
-# # CloudTrail requires an S3 bucket to store event files if we create CloudTrail here
-# resource "aws_s3_bucket" "cloudtrail_bucket" {
-#   count         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-#   bucket        = "${var.bucket_name}-cloudtrail-logs"
-#   force_destroy = true
-#   tags = merge(var.tags, {
-#     "Name" = "${var.bucket_name}-cloudtrail-storage"
-#   })
-
-#   # When KMS is enabled, set default SSE to AWS KMS using either the created key or provided key ARN
-#   dynamic "server_side_encryption_configuration" {
-#     for_each = var.enable_kms ? [1] : []
-#     content {
-#       rule {
-#         apply_server_side_encryption_by_default {
-#           sse_algorithm     = "aws:kms"
-#           kms_master_key_id = var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn
-#         }
-#       }
-#     }
-#   }
-# }
-
-# resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
-#   count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-#   bucket = aws_s3_bucket.cloudtrail_bucket[0].id
-
-#   block_public_acls       = true
-#   block_public_policy     = true
-#   ignore_public_acls      = true
-#   restrict_public_buckets = true
-# }
-
-# resource "aws_cloudtrail" "this" {
-#   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-
-#   name                          = "${var.bucket_name}-cloudtrail"
-#   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].bucket
-#   include_global_service_events = false
-#   enable_logging                = true
-#   is_multi_region_trail         = false
-#   cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail[0].arn
-#   cloud_watch_logs_group_arn    = local.cloudwatch_log_group_arn
-
-#   event_selector {
-#     read_write_type           = "All"
-#     include_management_events = false
-
-#     data_resource {
-#       type   = "AWS::S3::Object"
-#       values = ["arn:aws:s3:::${aws_s3_bucket.this.bucket}/"]
-#     }
-#   }
-
-#   tags = var.tags
-# }
-
 # Cross-variable validation implemented as runtime checks (fail during 'apply' if inputs are invalid).
 # Check kms inputs: if enable_kms = true and create_kms = false then kms_key_arn must be supplied
 resource "null_resource" "input_validation_kms" {
@@ -336,8 +227,7 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 # CloudTrail IAM Role and policy: only create when creating a CloudTrail (not when using an existing CloudTrail)
 resource "aws_iam_role" "cloudtrail" {
   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-
-  name = "${var.bucket_name}-cloudtrail-to-cw-role"
+  name  = "${var.bucket_name}-cloudtrail-to-cw-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -391,9 +281,9 @@ resource "aws_iam_role_policy" "cloudtrail_policy" {
 
 # CloudTrail requires an S3 bucket to store event files if we create CloudTrail here
 resource "aws_s3_bucket" "cloudtrail_bucket" {
-  count         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-  bucket        = "${var.bucket_name}-cloudtrail-logs"
-  acl           = var.allow_bucket_acl ? "private" : null
+  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+  bucket = "${var.bucket_name}-cloudtrail-logs"
+  # acl           = var.allow_bucket_acl ? "private" : null
   force_destroy = true
 
   tags = merge(var.tags, {
@@ -414,6 +304,18 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 }
 
+# CloudTrail storage bucket encryption config: created only when cloudtrail bucket exists
+resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail_bucket" {
+  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail_bucket[0].id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = var.enable_kms ? "aws:kms" : "AES256"
+      kms_master_key_id = var.enable_kms ? (var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn) : null
+    }
+  }
+}
+
 # resource "aws_s3_bucket_acl" "cloudtrail_bucket_acl" {
 #   count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
 #   bucket = aws_s3_bucket.cloudtrail_bucket[0].id
@@ -429,6 +331,19 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# Server-side encryption configuration resources (replaces deprecated inline block)
+# # Primary bucket: always create an SSE configuration (either SSE-S3 or SSE-KMS depending on var.enable_kms)
+# resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+#   count  = 1
+#   bucket = aws_s3_bucket.this.id
+#   rule {
+#     apply_server_side_encryption_by_default {
+#       sse_algorithm     = var.enable_kms ? "aws:kms" : "AES256"
+#       kms_master_key_id = var.enable_kms ? (var.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn) : null
+#     }
+#   }
+# }
 
 resource "aws_cloudtrail" "this" {
   # Explicit dependencies to ensure log group and role/policy are present before CloudTrail creation.
