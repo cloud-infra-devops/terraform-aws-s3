@@ -321,15 +321,86 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail_bucket_pab" {
   restrict_public_buckets = true
 }
 
+# Add a bucket policy to allow CloudTrail to write to the CloudTrail storage bucket.
+# This policy is created only if the module created the cloudtrail bucket.
+resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
+  count  = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail_bucket[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AWSCloudTrailAclCheck20150319"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:GetBucketAcl"
+        Resource  = aws_s3_bucket.cloudtrail_bucket[0].arn
+      },
+      # PutObject permission — include condition only if ACLs are allowed (var.allow_bucket_acl = true)
+      (
+        var.allow_bucket_acl ?
+        {
+          Sid       = "AWSCloudTrailWrite20150319"
+          Effect    = "Allow"
+          Principal = { Service = "cloudtrail.amazonaws.com" }
+          Action    = "s3:PutObject"
+          Resource  = "${aws_s3_bucket.cloudtrail_bucket[0].arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+          Condition = {
+            StringEquals = {
+              "s3:x-amz-acl" = "bucket-owner-full-control"
+            }
+          }
+        } :
+        {
+          Sid       = "AWSCloudTrailWrite20150319"
+          Effect    = "Allow"
+          Principal = { Service = "cloudtrail.amazonaws.com" }
+          Action    = "s3:PutObject"
+          Resource  = "${aws_s3_bucket.cloudtrail_bucket[0].arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        }
+      )
+    ]
+  })
+}
+# resource "aws_cloudtrail" "this" {
+#   # Explicit dependencies to ensure log group and role/policy are present before CloudTrail creation.
+#   depends_on = [
+#     aws_cloudwatch_log_group.cloudtrail,
+#     aws_iam_role.cloudtrail,
+#     aws_iam_role_policy.cloudtrail_policy
+#   ]
+#   count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
+
+#   name                          = "${var.bucket_name}-cloudtrail"
+#   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].bucket
+#   include_global_service_events = false
+#   enable_logging                = true
+#   is_multi_region_trail         = false
+#   cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail[0].arn
+#   cloud_watch_logs_group_arn    = "${local.cloudwatch_log_group_arn}:*"
+
+#   event_selector {
+#     read_write_type           = "All"
+#     include_management_events = false
+
+#     data_resource {
+#       type   = "AWS::S3::Object"
+#       values = ["arn:aws:s3:::${aws_s3_bucket.this.bucket}/"]
+#     }
+#   }
+
+#   tags = var.tags
+# }
+
 resource "aws_cloudtrail" "this" {
-  # Explicit dependencies to ensure log group and role/policy are present before CloudTrail creation.
   depends_on = [
     aws_cloudwatch_log_group.cloudtrail,
     aws_iam_role.cloudtrail,
-    aws_iam_role_policy.cloudtrail_policy
+    aws_iam_role_policy.cloudtrail_policy,
+    aws_s3_bucket_policy.cloudtrail_bucket_policy, # ensure bucket policy exists before trail creation
   ]
-  count = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
-
+  count                         = var.enable_cloudtrail && !var.use_existing_cloudtrail ? 1 : 0
   name                          = "${var.bucket_name}-cloudtrail"
   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].bucket
   include_global_service_events = false
