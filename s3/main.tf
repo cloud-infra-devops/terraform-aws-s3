@@ -8,7 +8,9 @@ locals {
   # For buckets not created by the module (e.g., external logging bucket), limited information is returned (name only).
   logging_bucket_obj        = var.create_logging_bucket ? aws_s3_bucket.logging[0] : null
   cloudtrail_bucket_obj     = (var.enable_cloudtrail && !var.use_existing_cloudtrail) ? aws_s3_bucket.cloudtrail_bucket[0] : null
-  cloudwatch_log_group_name = var.enable_cloudtrail ? (var.create_cloudwatch_log_group ? aws_cloudwatch_log_group.cloudtrail[0].name : var.existing_cloudwatch_log_group_name) : ""
+  cloudwatch_log_group_name = var.use_existing_cloudwatch_log_group ? var.existing_cloudwatch_log_group_name : aws_cloudwatch_log_group.cloudtrail[0].name
+  cloudwatch_log_group_arn  = var.use_existing_cloudwatch_log_group ? "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${replace(var.existing_cloudwatch_log_group_name, "/", "%2F")}" : aws_cloudwatch_log_group.cloudtrail[0].arn
+  # cloudwatch_log_group_name = var.enable_cloudtrail ? (var.create_cloudwatch_log_group ? aws_cloudwatch_log_group.cloudtrail[0].name : var.existing_cloudwatch_log_group_name) : ""
   # sns_topic_arn             = var.create_sns_topic ? aws_sns_topic.alerts[0].arn : var.existing_sns_topic_arn
 }
 
@@ -198,12 +200,6 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = var.cloudwatch_log_group_name != "" ? var.cloudwatch_log_group_name : "/aws/cloudtrail/s3/${var.bucket_name}"
   retention_in_days = var.cloudwatch_log_retention_days
   tags              = merge(var.tags, { "Name" = "${var.bucket_name}-cloudtrail-log-group" })
-}
-
-# Compute cloudwatch log group name and ARN depending on whether an existing group is used
-locals {
-  cloudwatch_log_group_name = var.use_existing_cloudwatch_log_group ? var.existing_cloudwatch_log_group_name : aws_cloudwatch_log_group.cloudtrail[0].name
-  cloudwatch_log_group_arn  = var.use_existing_cloudwatch_log_group ? "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${replace(var.existing_cloudwatch_log_group_name, "/", "%2F")}" : aws_cloudwatch_log_group.cloudtrail[0].arn
 }
 
 # CloudTrail IAM Role and policy: only create when creating a CloudTrail (not when using an existing CloudTrail)
